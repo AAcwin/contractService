@@ -3,23 +3,29 @@ import com.example.contractmanagement.Utils.JwtUtil;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.pojo.User;
 import com.example.contractmanagement.pojo.UserRight;
-import com.example.contractmanagement.service.URightService;
+import com.example.contractmanagement.service.FunctionsService;
+import com.example.contractmanagement.service.RoleService;
+import com.example.contractmanagement.service.UserRightService;
 import com.example.contractmanagement.service.userService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 @RestController
 @RequestMapping("/user")
 public class userController {
     @Autowired
     private userService userService;
+    @Autowired
+    private UserRightService userRightService;
+    @Autowired
+    private FunctionsService functionsService;
+    @Autowired
+    private RoleService roleService;
 @PostMapping("/register")
     public ToWeb register(String username, String password){
         User u = userService.findByName(username);
@@ -45,4 +51,30 @@ public ToWeb login(String username,String password){
     result.put("userInfo", userInfo);
     return ToWeb.success(result);
 }
+
+@GetMapping("/alldetail")
+    public ToWeb showUsers(){
+    List<UserRight> users = userRightService.getUsers();
+    if(users.isEmpty()){
+        return ToWeb.error("查询为空");
+    }
+    return ToWeb.success(users);
+}
+@GetMapping("/signdetail")
+public ToWeb showSignUsers(){
+   int funId = functionsService.findByName("会签合同");
+   List<String> users = roleService.findByFunctionId(funId);
+   List<UserRight> result = new ArrayList<>();
+   for (String user : users){
+       UserRight ur =userRightService.findByRole(user);
+       if(ur != null){
+           result.add(ur);
+       }
+   }
+   if(result.isEmpty()){
+       return ToWeb.error("查询为空");
+   }
+   return ToWeb.success(result);
+}
+
 }
