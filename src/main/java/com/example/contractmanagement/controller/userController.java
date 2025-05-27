@@ -1,5 +1,6 @@
 package com.example.contractmanagement.controller;
 import com.example.contractmanagement.Utils.JwtUtil;
+import com.example.contractmanagement.Utils.ShowUsersByRole;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.pojo.User;
 import com.example.contractmanagement.pojo.UserRight;
@@ -23,9 +24,7 @@ public class userController {
     @Autowired
     private UserRightService userRightService;
     @Autowired
-    private FunctionsService functionsService;
-    @Autowired
-    private RoleService roleService;
+    private ShowUsersByRole showUsersByRole;
 @PostMapping("/register")
     public ToWeb register(String username, String password){
         User u = userService.findByName(username);
@@ -62,19 +61,30 @@ public ToWeb login(String username,String password){
 }
 @GetMapping("/signdetail")
 public ToWeb showSignUsers(){
-   int funId = functionsService.findByName("会签合同");
-   List<String> users = roleService.findByFunctionId(funId);
-   List<UserRight> result = new ArrayList<>();
-   for (String user : users){
-       UserRight ur =userRightService.findByRole(user);
-       if(ur != null){
-           result.add(ur);
-       }
-   }
+   List<UserRight> result = showUsersByRole.showUsers("会签合同");
    if(result.isEmpty()){
        return ToWeb.error("查询为空");
    }
    return ToWeb.success(result);
 }
+
+@GetMapping("/contractdetail")
+public ToWeb showContractUsers(){
+    List<UserRight> result = showUsersByRole.showUsers("定稿合同");
+    if(result.isEmpty()){
+        return ToWeb.error("查询为空");
+    }
+    return ToWeb.success(result);
+}
+
+    @GetMapping("/approvedetail")
+    public ToWeb showApproveUsers(){
+        List<UserRight> result = showUsersByRole.showUsers("审批合同");
+        if(result.isEmpty()){
+            return ToWeb.error("查询为空");
+        }
+        return ToWeb.success(result);
+    }
+
 
 }

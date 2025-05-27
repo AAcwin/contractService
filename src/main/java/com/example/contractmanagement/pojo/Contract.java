@@ -2,6 +2,7 @@ package com.example.contractmanagement.pojo;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -10,8 +11,10 @@ public class Contract {
     private String num;
     private String name;
     private String customer;
-    private LocalDateTime beginTime;
-    private LocalDateTime endTime;
+    private LocalDate beginTime;
+    private LocalDate endTime;
     private String content;
     private String userName;
+    private int type;
+    private LocalDateTime finishTime;
 }
