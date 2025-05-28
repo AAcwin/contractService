@@ -1,6 +1,8 @@
 package com.example.contractmanagement.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.injector.methods.Update;
 import com.example.contractmanagement.Utils.ThreadLocalUtil;
 import com.example.contractmanagement.mapper.ContractProcessMapper;
 import com.example.contractmanagement.pojo.ContractProcess;
@@ -21,8 +23,13 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         contractProcess.setConnum(num);
         contractProcess.setUserName(user);
         contractProcess.setTime(LocalDateTime.now());
-        contractProcess.setState(0);
         contractProcess.setType(type);
+        if(contractProcess.getType()==1){
+            contractProcess.setState(1);
+        }
+        else{
+            contractProcess.setState(0);
+        }
         try {
             contractProcessMapper.insert(contractProcess);
             return true;
@@ -34,8 +41,25 @@ public class ContractProcessServiceImpl implements ContractProcessService {
     @Override
     public List<ContractProcess> myContracts() {
         LambdaQueryWrapper<ContractProcess> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ContractProcess::getState,0)
+        lambdaQueryWrapper.eq(ContractProcess::getState,1)
                 .eq(ContractProcess::getUserName, ThreadLocalUtil.getTL());
         return contractProcessMapper.selectList(lambdaQueryWrapper);
     }
+
+    @Override
+    public boolean finishProcess(String connum,int type,String user,String contend) {
+        LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(ContractProcess::getConnum,connum)
+                .eq(ContractProcess::getType,type)
+                .eq(ContractProcess::getUserName,user)
+                .set(ContractProcess::getContend,contend)
+                .set(ContractProcess::getState,2);
+        try {
+            contractProcessMapper.update(lambdaUpdateWrapper);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.example.contractmanagement.controller;
 
+import com.example.contractmanagement.Utils.ThreadLocalUtil;
+import com.example.contractmanagement.Utils.UpdateProcess;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
@@ -15,6 +17,8 @@ public class ContractController {
     ContractService contractService;
     @Autowired
     ContractProcessService contractProcessService;
+    @Autowired
+    UpdateProcess updateProcess;
     @PostMapping("/draft")
     public ToWeb draftContract(String contractname,String customername,String content,String starttime,String endtime){
         if(contractService.insertIntoTable(contractname,customername,content,starttime,endtime)){
@@ -25,9 +29,6 @@ public class ContractController {
 
     @PostMapping("/assign")
     public ToWeb assignContract(String connum, @RequestParam List<String> countersign,@RequestParam List<String> approve,@RequestParam List<String> sign){
-        System.out.println(countersign);
-        System.out.println(approve);
-        System.out.println(sign);
         for (String c : countersign){
             if(!contractProcessService.insertIntoTable(connum,1,c)){
                 return ToWeb.error("数据无效");
@@ -49,5 +50,13 @@ public class ContractController {
     public ToWeb getMyContracts(){
        return ToWeb.success(contractProcessService.myContracts());
     }
+
+
+@PostMapping("/countersign")
+    public ToWeb finishCounterSign(String contractnum,String suggest){
+        contractProcessService.finishProcess(contractnum,1, ThreadLocalUtil.getTL(),suggest);
+        updateProcess.updateTable(contractnum);
+        return ToWeb.success();
+}
 
 }
