@@ -62,4 +62,21 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         }
     }
 
+    @Override
+    public void finalProcess(String connum) {
+        LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(ContractProcess::getUserName,ThreadLocalUtil.getTL())
+                .eq(ContractProcess::getConnum,connum)
+                .eq(ContractProcess::getType,2)
+                .set(ContractProcess::getState,2);
+        contractProcessMapper.update(lambdaUpdateWrapper);
+
+        LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper1 = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper1.eq(ContractProcess::getConnum,connum)
+                .eq(ContractProcess::getType,3)
+                .set(ContractProcess::getState,1);
+        contractProcessMapper.update(lambdaUpdateWrapper1);
+    }
+
+
 }

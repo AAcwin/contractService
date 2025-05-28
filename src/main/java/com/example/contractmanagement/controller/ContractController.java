@@ -21,7 +21,9 @@ public class ContractController {
     UpdateProcess updateProcess;
     @PostMapping("/draft")
     public ToWeb draftContract(String contractname,String customername,String content,String starttime,String endtime){
-        if(contractService.insertIntoTable(contractname,customername,content,starttime,endtime)){
+        String uid = contractService.insertIntoTable(contractname,customername,content,starttime,endtime);
+        if(!uid.isEmpty()){
+            contractProcessService.insertIntoTable(uid,2,ThreadLocalUtil.getTL());
             return ToWeb.success();
         }
         return ToWeb.error("数据错误");
@@ -35,28 +37,39 @@ public class ContractController {
             }
         }
         for(String a : approve){
-            if(!contractProcessService.insertIntoTable(connum,2,a)){
+            if(!contractProcessService.insertIntoTable(connum,3,a)){
                 return ToWeb.error("数据无效");
             }
         }
         for (String s : sign){
-            if(!contractProcessService.insertIntoTable(connum,3,s)){
+            if(!contractProcessService.insertIntoTable(connum,4,s)){
                 return ToWeb.error("数据无效");
             }
         }
         return ToWeb.success();
     }
-@GetMapping("/mydetail")
+    @GetMapping("/mydetail")
     public ToWeb getMyContracts(){
        return ToWeb.success(contractProcessService.myContracts());
     }
 
 
-@PostMapping("/countersign")
+    @PostMapping("/countersign")
     public ToWeb finishCounterSign(String contractnum,String suggest){
-        contractProcessService.finishProcess(contractnum,1, ThreadLocalUtil.getTL(),suggest);
-        updateProcess.updateTable(contractnum);
-        return ToWeb.success();
-}
+        if(contractProcessService.finishProcess(contractnum,1, ThreadLocalUtil.getTL(),suggest)){
+            updateProcess.updateTable(contractnum);
+            return ToWeb.success();
+        }
+        return ToWeb.error("数据错误");
+
+    }
+    @PostMapping("/final")
+    public ToWeb finishFinal(String contractnum,String suggest){
+        if(contractService.finishC(contractnum,suggest)){
+            contractProcessService.finalProcess(contractnum);
+            return ToWeb.success();
+        }
+        return ToWeb.error("数据错误");
+    }
 
 }

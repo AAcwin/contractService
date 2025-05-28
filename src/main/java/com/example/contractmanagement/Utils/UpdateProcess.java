@@ -49,8 +49,8 @@ public class UpdateProcess {
         //检查会签情况
         check(connum,1,2,1,2);
         //检测审批情况
-        check(connum,2,3,3,4);
+        check(connum,3,4,3,4);
         //检测签订情况
-        check(connum,3,0,4,5);
+        check(connum,4,0,4,5);
     }
 }

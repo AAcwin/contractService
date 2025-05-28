@@ -14,6 +14,7 @@ public class ContractProcess {
     @JsonIgnore
     private int state;
     private String userName;
+    @JsonIgnore
     private String contend;
     private LocalDateTime time;
 }
