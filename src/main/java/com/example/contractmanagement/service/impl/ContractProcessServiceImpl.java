@@ -87,5 +87,14 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         contractProcessMapper.update(lambdaUpdateWrapper);
     }
 
+    @Override
+    public List<ContractProcess> findMessage(String contractnum,int type) {
+        LambdaQueryWrapper<ContractProcess> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ContractProcess::getConnum,contractnum)
+                .eq(ContractProcess::getState,2)
+                .eq(ContractProcess::getType,type);
+        return contractProcessMapper.selectList(lambdaQueryWrapper);
+    }
+
 
 }

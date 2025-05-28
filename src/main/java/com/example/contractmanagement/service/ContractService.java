@@ -14,4 +14,6 @@ public interface ContractService {
 
     List<Contract> findByType(int type);
 
+    List<Contract> findByUser();
+    List<Contract> findByMyType(int type);
 }

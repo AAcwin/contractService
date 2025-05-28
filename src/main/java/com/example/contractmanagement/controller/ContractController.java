@@ -1,17 +1,17 @@
 package com.example.contractmanagement.controller;
 
+import com.example.contractmanagement.Utils.ContractProcessWithContent;
 import com.example.contractmanagement.Utils.ThreadLocalUtil;
 import com.example.contractmanagement.Utils.UpdateProcess;
+import com.example.contractmanagement.pojo.ContractProcess;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 @RestController
 @RequestMapping("/contract")
@@ -121,4 +121,41 @@ public class ContractController {
         return ToWeb.success(contractService.findByType(type));
     }
 
+    @GetMapping("/mycontracts")
+    public ToWeb myContracts(){
+        return ToWeb.success(contractService.findByUser());
+    }
+
+    @GetMapping("/mysignedcontracts")
+    public ToWeb mySignedContracts(){
+        return ToWeb.success(contractService.findByMyType(5));
+    }
+
+    @PostMapping("/getcountermessage")
+    public ToWeb getCounterMessage(String contractnum){
+        List<ContractProcessWithContent> dto = new ArrayList<>();
+        List<ContractProcess> contractProcess =contractProcessService.findMessage(contractnum,1);
+        for(ContractProcess c : contractProcess){
+            ContractProcessWithContent c1 = new ContractProcessWithContent();
+            c1.setUserName(c.getUserName());
+            c1.setContend(c.getContend());
+            c1.setTime(c.getTime());
+            dto.add(c1);
+        }
+        return ToWeb.success(dto);
+    }
+
+    @PostMapping("/getfinnalmessage")
+    public ToWeb getFinnalMessage(String contractnum){
+        List<ContractProcessWithContent> dto = new ArrayList<>();
+        List<ContractProcess> contractProcess =contractProcessService.findMessage(contractnum,3);
+        for(ContractProcess c : contractProcess){
+            ContractProcessWithContent c1 = new ContractProcessWithContent();
+            c1.setUserName(c.getUserName());
+            c1.setContend(c.getContend());
+            c1.setTime(c.getTime());
+            dto.add(c1);
+        }
+        return ToWeb.success(dto);
+    }
 }

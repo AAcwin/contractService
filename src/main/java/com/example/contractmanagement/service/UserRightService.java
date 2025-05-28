@@ -10,4 +10,6 @@ public interface UserRightService {
     List<UserRight> getUsers();
     UserRight findByRole(String name);
 
+    boolean changeRole(String user,String role);
+
 }

@@ -82,4 +82,19 @@ public class ContractServiceImpl implements ContractService {
         lambdaQueryWrapper.eq(Contract::getType,type);
         return contractMapper.selectList(lambdaQueryWrapper);
     }
+
+    @Override
+    public List<Contract> findByUser(){
+        LambdaQueryWrapper<Contract> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Contract::getUserName,ThreadLocalUtil.getTL());
+        return contractMapper.selectList(lambdaQueryWrapper);
+    }
+
+    @Override
+    public List<Contract> findByMyType(int type) {
+        LambdaQueryWrapper<Contract> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Contract::getType,type)
+                .eq(Contract::getUserName,ThreadLocalUtil.getTL());
+        return contractMapper.selectList(lambdaQueryWrapper);
+    }
 }

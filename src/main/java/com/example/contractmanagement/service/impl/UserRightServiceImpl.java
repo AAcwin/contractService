@@ -1,6 +1,7 @@
 package com.example.contractmanagement.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.contractmanagement.mapper.UserRightMapper;
 import com.example.contractmanagement.pojo.User;
 import com.example.contractmanagement.pojo.UserRight;
@@ -32,5 +33,16 @@ public class UserRightServiceImpl implements UserRightService {
         return uRightMapper.selectList(null);
     }
 
+    @Override
+    public  boolean changeRole(String user,String role){
+        LambdaUpdateWrapper<UserRight> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(UserRight::getUsername,user)
+                .set(UserRight::getRolename,role);
+        int rows = uRightMapper.update(lambdaUpdateWrapper);
+        if (rows==0){
+            return false;
+        }
+        return true;
+    }
 
 }
