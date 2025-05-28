@@ -1,5 +1,6 @@
 package com.example.contractmanagement.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.contractmanagement.Utils.ThreadLocalUtil;
 import com.example.contractmanagement.mapper.ContractMapper;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -53,5 +55,31 @@ public class ContractServiceImpl implements ContractService {
         return true;
     }
 
+    @Override
+    public void changeType(String connum, int type) {
+        LambdaUpdateWrapper<Contract> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Contract::getNum,connum)
+                .set(Contract::getType,type);
+        contractMapper.update(lambdaUpdateWrapper);
+    }
+    @Override
+    public int checkState(String connum){
+        LambdaQueryWrapper<Contract> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Contract::getNum,connum);
+        Contract c = contractMapper.selectOne(lambdaQueryWrapper);
+        return c.getType();
+    }
 
+    @Override
+    public List<Contract> showConstracts() {
+        return contractMapper.selectList(null);
+    }
+
+
+    @Override
+    public List<Contract> findByType(int type){
+        LambdaQueryWrapper<Contract> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Contract::getType,type);
+        return contractMapper.selectList(lambdaQueryWrapper);
+    }
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.injector.methods.Update;
 import com.example.contractmanagement.Utils.ThreadLocalUtil;
 import com.example.contractmanagement.mapper.ContractProcessMapper;
+import com.example.contractmanagement.pojo.Contract;
 import com.example.contractmanagement.pojo.ContractProcess;
 import com.example.contractmanagement.service.ContractProcessService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +77,14 @@ public class ContractProcessServiceImpl implements ContractProcessService {
                 .eq(ContractProcess::getType,3)
                 .set(ContractProcess::getState,1);
         contractProcessMapper.update(lambdaUpdateWrapper1);
+    }
+
+    @Override
+    public void changeState(String connum,int state) {
+        LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(ContractProcess::getConnum,connum)
+                .set(ContractProcess::getState,state);
+        contractProcessMapper.update(lambdaUpdateWrapper);
     }
 
 
