@@ -4,10 +4,7 @@ import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -47,6 +44,10 @@ public class ContractController {
             }
         }
         return ToWeb.success();
+    }
+@GetMapping("/mydetail")
+    public ToWeb getMyContracts(){
+       return ToWeb.success(contractProcessService.myContracts());
     }
 
 }
