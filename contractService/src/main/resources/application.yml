@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: contractManagement
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/contractManagement
+    username: root
+    password: 123456
+server:
+  port: 4545
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
