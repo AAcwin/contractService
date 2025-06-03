@@ -97,4 +97,31 @@ public class ContractServiceImpl implements ContractService {
                 .eq(Contract::getUserName,ThreadLocalUtil.getTL());
         return contractMapper.selectList(lambdaQueryWrapper);
     }
+
+    @Override
+    public boolean adminModifyContract(String connum, String content) {
+        LambdaUpdateWrapper<Contract> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Contract::getNum, connum)
+                .set(Contract::getContent, content)
+                .set(Contract::getFinishTime, LocalDateTime.now()); // 更新修改时间
+
+        int rows = contractMapper.update(lambdaUpdateWrapper);
+        return rows > 0;
+    }
+
+    @Override
+    public boolean adminUpdateContractInfo(String connum, String contractname, String customername,
+                                           String content, String starttime, String endtime) {
+        LambdaUpdateWrapper<Contract> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Contract::getNum, connum)
+                .set(Contract::getName, contractname)
+                .set(Contract::getCustomer, customername)
+                .set(Contract::getContent, content)
+                .set(Contract::getBeginTime, LocalDate.parse(starttime))
+                .set(Contract::getEndTime, LocalDate.parse(endtime))
+                .set(Contract::getFinishTime, LocalDateTime.now());
+
+        int rows = contractMapper.update(lambdaUpdateWrapper);
+        return rows > 0;
+    }
 }

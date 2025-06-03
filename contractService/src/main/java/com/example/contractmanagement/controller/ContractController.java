@@ -158,4 +158,40 @@ public class ContractController {
         }
         return ToWeb.success(dto);
     }
+
+    /**
+     * 管理员新增单个合同信息（与起草合同功能相同）
+     * @param contractname 合同名称
+     * @param customername 客户名称
+     * @param content 合同内容
+     * @param starttime 开始时间
+     * @param endtime 结束时间
+     * @return ToWeb 返回结果
+     */
+    @PostMapping("/admin/add")
+    public ToWeb adminAddContract(String contractname, String customername, String content, String starttime, String endtime) {
+        String uid = contractService.insertIntoTable(contractname, customername, content, starttime, endtime);
+        if (!uid.isEmpty()) {
+            contractProcessService.insertIntoTable(uid, 2, ThreadLocalUtil.getTL());
+            Map<String, String> uuid = new TreeMap<>();
+            uuid.put("contractnum", uid);
+            return ToWeb.success(uuid);
+        }
+        return ToWeb.error("非法操作");
+    }
+
+    /**
+     * 管理员修改合同信息（与定稿合同功能相同，但无状态限制）
+     * @param contractnum 合同编号
+     * @param content 修改后的合同内容
+     * @return ToWeb 返回结果
+     */
+    @PostMapping("/admin/modify")
+    public ToWeb adminModifyContract(String contractnum, String content) {
+        if (contractService.adminModifyContract(contractnum, content)) {
+            contractProcessService.finalProcess(contractnum);
+            return ToWeb.success();
+        }
+        return ToWeb.error("数据错误");
+    }
 }

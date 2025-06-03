@@ -16,4 +16,9 @@ public interface ContractService {
 
     List<Contract> findByUser();
     List<Contract> findByMyType(int type);
+
+    boolean adminModifyContract(String connum, String content);
+    boolean adminUpdateContractInfo(String connum, String contractname, String customername,
+                                    String content, String starttime, String endtime);
+
 }
