@@ -3,12 +3,16 @@ package com.example.contractmanagement.controller;
 import com.example.contractmanagement.Utils.ContractProcessWithContent;
 import com.example.contractmanagement.Utils.ThreadLocalUtil;
 import com.example.contractmanagement.Utils.UpdateProcess;
+import com.example.contractmanagement.pojo.Contract;
 import com.example.contractmanagement.pojo.ContractProcess;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
+import com.example.contractmanagement.webservice.ContractS;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -23,15 +27,28 @@ public class ContractController {
     @Autowired
     UpdateProcess updateProcess;
     @PostMapping("/draft")
-    public ToWeb draftContract(String contractname,String customername,String content,String starttime,String endtime){
-        String uid = contractService.insertIntoTable(contractname,customername,content,starttime,endtime);
-        if(!uid.isEmpty()){
-            contractProcessService.insertIntoTable(uid,2,ThreadLocalUtil.getTL());
-            Map<String,String> uuid = new TreeMap<>();
-            uuid.put("contractnum",uid);
-            return ToWeb.success(uuid);
+    public ResponseEntity<ToWeb> draftContract(
+            @RequestParam String contractname,
+            @RequestParam String customername,
+            @RequestParam String content,
+            @RequestParam String starttime,
+            @RequestParam String endtime) {
+
+        String uid = contractService.insertIntoTable(contractname, customername, content, starttime, endtime);
+
+        if (!uid.isEmpty()) {
+            contractProcessService.insertIntoTable(uid, 2, ThreadLocalUtil.getTL());
+            Map<String, String> uuid = new TreeMap<>();
+            uuid.put("contractnum", uid);
+
+            return ResponseEntity
+                    .status(200) // 200
+                    .body(ToWeb.success(uuid));
         }
-        return ToWeb.error("非法操作");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST) // 400 Bad Request
+                .body(ToWeb.error("非法操作"));
     }
 
     @PostMapping("/assign")
@@ -112,8 +129,41 @@ public class ContractController {
     }
 
     @GetMapping("/detail")
-    public ToWeb allContracts(){
-        return ToWeb.success(contractService.showConstracts());
+    public ResponseEntity<ToWeb> allContracts() {
+        List<Contract> contracts1 = contractService.showConstracts();
+        List<ContractS> contracts = new ArrayList<>();
+
+        // 如果查询结果为空
+        if (contracts1.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND) // 404
+                    .body(ToWeb.error("合同列表为空"));
+        }
+
+        // 转换DTO
+        for (Contract c : contracts1) {
+            ContractS cs = new ContractS();
+            cs.setName(c.getName());
+            cs.setCode(c.getNum());
+            cs.setContent(c.getContent());
+            cs.setCustomer(c.getCustomer());
+            cs.setBeginDate(c.getBeginTime().toString());
+            cs.setEndDate(c.getEndTime().toString());
+            String status = switch (c.getType()) {
+                case 1 -> "起草";
+                case 2 -> "会签完成";
+                case 3 -> "定稿完成";
+                case 4 -> "审批完成";
+                case 5 -> "签订完成";
+                default -> "";
+            };
+            cs.setStatus(status);
+            contracts.add(cs);
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.OK) // 200
+                .body(ToWeb.success(contracts));  // 返回转换后的DTO列表
     }
 
     @PostMapping("/typedetail")
