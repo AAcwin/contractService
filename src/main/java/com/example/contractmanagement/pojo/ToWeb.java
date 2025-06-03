@@ -7,19 +7,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class ToWeb<T> {
-    private int code;
     private String message;
     private T data;
 
     public static <E> ToWeb<E> success(E data ){
-        return new ToWeb<>(0,"success",data);
+        return new ToWeb<>("success",data);
     }
 
     public static ToWeb success(){
-        return new ToWeb(0,"success",null);
+        return new ToWeb("success",null);
     }
 
     public static ToWeb error(String message){
-        return new ToWeb(1,message,null);
+        return new ToWeb(message,null);
     }
 }

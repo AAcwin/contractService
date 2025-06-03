@@ -7,6 +7,6 @@ import java.util.List;
 public interface userService {
     User findByName(String name);
 
-    void register(String name, String password);
+    void register(String name, String password,String email);
 
 }

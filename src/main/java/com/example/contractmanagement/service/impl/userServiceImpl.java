@@ -24,12 +24,14 @@ public class userServiceImpl implements userService {
     }
 
     @Override
-    public void register(String name, String password) {
+    public void register(String name, String password,String email) {
         User u = new User();
         u.setUsername(name);
         u.setPassword(password);
+        u.setEmail(email);
         UserRight ur = new UserRight();
         ur.setUsername(name);
+        ur.setRolename("newuser");
         userMapper.insert(u);
         userRightMapper.insert(ur);
     }
