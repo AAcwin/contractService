@@ -8,7 +8,9 @@ import com.example.contractmanagement.pojo.ContractProcess;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
+import com.example.contractmanagement.webservice.ContractProcessS;
 import com.example.contractmanagement.webservice.ContractS;
+import com.example.contractmanagement.webservice.CounterSignR;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -80,17 +82,27 @@ public class ContractController {
 
 
     @PostMapping("/countersign")
-    public ToWeb finishCounterSign(String contractnum,String content){
-        if(contractService.checkState(contractnum)!=1){
-            return ToWeb.error("非法操作");
+    public ResponseEntity<ToWeb> finishCounterSign(@RequestBody CounterSignR c) {
+        // 检查合同状态
+        if (contractService.checkState(c.getCode()) != 1) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST) // 400
+                    .body(ToWeb.error("非法操作"));
         }
-        if(contractProcessService.finishProcess(contractnum,1, ThreadLocalUtil.getTL(),content)){
-            updateProcess.updateTable(contractnum);
-            return ToWeb.success();
-        }
-        return ToWeb.error("数据错误");
 
+        // 处理会签流程
+        if (contractProcessService.finishProcess(c.getCode(), 1, ThreadLocalUtil.getTL(), c.getCosigncontent())) {
+            updateProcess.updateTable(c.getCode());
+            return ResponseEntity
+                    .status(HttpStatus.OK) // 200
+                    .body(ToWeb.success());
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
+                .body(ToWeb.error("数据错误"));
     }
+
     @PostMapping("/final")
     public ToWeb finishFinal(String contractnum,String content){
         if(contractService.checkState(contractnum)!=2){
@@ -207,5 +219,58 @@ public class ContractController {
             dto.add(c1);
         }
         return ToWeb.success(dto);
+    }
+
+    @GetMapping("/process")
+    public ResponseEntity<ToWeb> getAllProcess(){
+        List<ContractProcessS> contractProcessSES = new ArrayList<>();
+        Set<String> cons = contractProcessService.getAllNum();
+        for(String s : cons){
+            ContractProcessS contractProcessS = new ContractProcessS();
+            contractProcessS.setCode(s);
+            String status = switch (contractService.checkState(s)) {
+                case 1 -> "待会签";
+                case 2 -> "待定稿";
+                case 3 -> "待审核";
+                case 4 -> "待签订";
+                case 5 -> "签订完成";
+                default -> "";
+            };
+            contractProcessS.setStatus(status);
+            List<ContractProcess> contractProcesses = contractProcessService.findBytype(s,2);//起稿人
+            for(ContractProcess c : contractProcesses){
+                contractProcessS.setDrafter(c.getUserName());
+                contractProcessS.setDrafttime(c.getTime().toString());
+            }
+            contractProcesses = contractProcessService.findBytype(s,1);//会签人
+            for(ContractProcess c : contractProcesses){
+                contractProcessS.setCosigner(contractProcessS.getCosigner()==null?c.getUserName():contractProcessS.getCosigner()+" "+c.getUserName());
+                contractProcessS.setCosigntime(c.getTime().toString());
+                String contend = "";
+                if(contractProcessS.getCosigncontent()!=null){
+                    contend = contractProcessS.getCosigncontent();
+                }
+                contend += " "+c.getContend();
+                contractProcessS.setCosigncontent(contend);
+            }
+            contractProcesses = contractProcessService.findBytype(s,3);//审批人
+            for(ContractProcess c : contractProcesses){
+                contractProcessS.setApprover(contractProcessS.getApprover()==null?c.getUserName():contractProcessS.getApprover()+" "+c.getUserName());
+                contractProcessS.setApprovetime(c.getTime().toString());
+            }
+
+            contractProcessS.setFinalizer(contractProcessS.getDrafter());//定稿人
+            contractProcessS.setFinalizetime(contractProcessS.getDrafttime());
+
+            contractProcesses = contractProcessService.findBytype(s,4);//审批人
+            for(ContractProcess c : contractProcesses){
+                contractProcessS.setSigner(contractProcessS.getSigner()==null?c.getUserName():contractProcessS.getSigner()+" "+c.getUserName());
+                contractProcessS.setSigntime(c.getTime().toString());
+            }
+            contractProcessSES.add(contractProcessS);
+        }
+        return ResponseEntity
+                .status(HttpStatus.OK) // 200
+                .body(ToWeb.success(contractProcessSES));
     }
 }

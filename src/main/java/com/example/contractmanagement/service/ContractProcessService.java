@@ -3,6 +3,7 @@ package com.example.contractmanagement.service;
 import com.example.contractmanagement.pojo.ContractProcess;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ContractProcessService {
     boolean insertIntoTable(String num,int type,String user);
@@ -11,5 +12,8 @@ public interface ContractProcessService {
     void finalProcess(String connum);
     void changeState(String connum,int state);
     List<ContractProcess> findMessage(String contractnum,int type);
+    List<ContractProcess> findBytype(String contractnum,int type);
+
+    Set<String> getAllNum();
 
 }

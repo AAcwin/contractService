@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Service
 public class ContractProcessServiceImpl implements ContractProcessService {
@@ -95,6 +97,25 @@ public class ContractProcessServiceImpl implements ContractProcessService {
                 .eq(ContractProcess::getType,type);
         return contractProcessMapper.selectList(lambdaQueryWrapper);
     }
+
+    @Override
+    public List<ContractProcess> findBytype(String contractnum,int type){
+        LambdaQueryWrapper<ContractProcess> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ContractProcess::getConnum,contractnum)
+                .eq(ContractProcess::getType,type);
+        return contractProcessMapper.selectList(lambdaQueryWrapper);
+    }
+
+    @Override
+    public Set<String> getAllNum(){
+        Set<String> nums = new TreeSet<>();
+        List<ContractProcess> contractProcesses = contractProcessMapper.selectList(null);
+        for(ContractProcess c : contractProcesses){
+            nums.add(c.getConnum());
+        }
+        return nums;
+    }
+
 
 
 }
