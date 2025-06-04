@@ -10,10 +10,16 @@
         <module name="contractManagement" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="contractManagement (1)" target="17" />
+      <module name="contractManagement (2)" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="contractManagement" options="-parameters" />
+      <module name="contractManagement (1)" options="-parameters" />
+      <module name="contractManagement (2)" options="-parameters" />
     </option>
   </component>
 </project>
