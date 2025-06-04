@@ -27,11 +27,11 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         contractProcess.setUserName(user);
         contractProcess.setTime(LocalDateTime.now());
         contractProcess.setType(type);
-        if(contractProcess.getType()==1){
-            contractProcess.setState(1);
+        if(contractProcess.getType()==0){
+            contractProcess.setState(2);
         }
         else{
-            contractProcess.setState(0);
+            contractProcess.setState(1);
         }
         try {
             contractProcessMapper.insert(contractProcess);
@@ -40,6 +40,8 @@ public class ContractProcessServiceImpl implements ContractProcessService {
             return false;
         }
     }
+
+
 
     @Override
     public List<ContractProcess> myContracts() {

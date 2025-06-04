@@ -62,6 +62,15 @@ public class ContractServiceImpl implements ContractService {
                 .set(Contract::getType,type);
         contractMapper.update(lambdaUpdateWrapper);
     }
+
+    @Override
+    public void changeContend(String connum, String contend) {
+        LambdaUpdateWrapper<Contract> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Contract::getNum,connum)
+                .set(Contract::getContent,contend);
+        contractMapper.update(lambdaUpdateWrapper);
+    }
+
     @Override
     public int checkState(String connum){
         LambdaQueryWrapper<Contract> lambdaQueryWrapper = new LambdaQueryWrapper<>();

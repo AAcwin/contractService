@@ -8,16 +8,16 @@ import com.example.contractmanagement.pojo.ContractProcess;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.service.ContractProcessService;
 import com.example.contractmanagement.service.ContractService;
-import com.example.contractmanagement.webservice.ContractProcessS;
-import com.example.contractmanagement.webservice.ContractS;
-import com.example.contractmanagement.webservice.CounterSignR;
-import org.springframework.beans.BeanUtils;
+import com.example.contractmanagement.DTO.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+
+import static com.example.contractmanagement.Utils.fromString.fromString;
 
 @RestController
 @RequestMapping("/contract")
@@ -39,7 +39,7 @@ public class ContractController {
         String uid = contractService.insertIntoTable(contractname, customername, content, starttime, endtime);
 
         if (!uid.isEmpty()) {
-            contractProcessService.insertIntoTable(uid, 2, ThreadLocalUtil.getTL());
+            contractProcessService.insertIntoTable(uid, 0, ThreadLocalUtil.getTL());
             Map<String, String> uuid = new TreeMap<>();
             uuid.put("contractnum", uid);
 
@@ -54,27 +54,59 @@ public class ContractController {
     }
 
     @PostMapping("/assign")
-    public ToWeb assignContract(String connum, @RequestParam List<String> countersign,@RequestParam List<String> approve,@RequestParam List<String> sign){
-        if(contractService.checkState(connum)!=1){
-            return ToWeb.error("非法操作");
-        }
-        for (String c : countersign){
-            if(!contractProcessService.insertIntoTable(connum,1,c)){
-                return ToWeb.error("非法操作");
+    public ResponseEntity<ToWeb> assignContract(@RequestBody AssignR request) {
+        try {
+            // 验证合同状态
+            if (contractService.checkState(request.getCode()) == 5) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ToWeb.error("非法操作：合同当前状态不允许分配"));
             }
-        }
-        for(String a : approve){
-            if(!contractProcessService.insertIntoTable(connum,3,a)){
-                return ToWeb.error("非法操作");
+
+            // 验证至少有一个角色被分配
+            if (request.getCosigner() == null &&
+                    request.getFinalizer() == null &&
+                    request.getApprover() == null &&
+                    request.getSigner() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ToWeb.error("必须指定至少一个角色（会签人/定稿人/审批人/签订人）"));
             }
-        }
-        for (String s : sign){
-            if(!contractProcessService.insertIntoTable(connum,4,s)){
-                return ToWeb.error("非法操作");
+
+            // 处理会签人分配
+            if (request.getCosigner() != null &&
+                    !contractProcessService.insertIntoTable(request.getCode(), 1, request.getCosigner())) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ToWeb.error("分配会签人失败"));
             }
+
+            // 处理定稿人分配
+            if (request.getFinalizer() != null &&
+                    !contractProcessService.insertIntoTable(request.getCode(), 2, request.getFinalizer())) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ToWeb.error("分配定稿人失败"));
+            }
+
+            // 处理审批人分配
+            if (request.getApprover() != null &&
+                    !contractProcessService.insertIntoTable(request.getCode(), 3, request.getApprover())) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ToWeb.error("分配审批人失败"));
+            }
+
+            // 处理签订人分配
+            if (request.getSigner() != null &&
+                    !contractProcessService.insertIntoTable(request.getCode(), 4, request.getSigner())) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ToWeb.error("分配签订人失败"));
+            }
+
+            return ResponseEntity.ok(ToWeb.success("角色分配成功"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ToWeb.error("分配过程中发生错误: " + e.getMessage()));
         }
-        return ToWeb.success();
     }
+
     @GetMapping("/mydetail")
     public ToWeb getMyContracts(){
        return ToWeb.success(contractProcessService.myContracts());
@@ -91,7 +123,7 @@ public class ContractController {
         }
 
         // 处理会签流程
-        if (contractProcessService.finishProcess(c.getCode(), 1, ThreadLocalUtil.getTL(), c.getCosigncontent())) {
+        if (contractProcessService.finishProcess(c.getCode(), 1, ThreadLocalUtil.getTL(), c.getContent())) {
             updateProcess.updateTable(c.getCode());
             return ResponseEntity
                     .status(HttpStatus.OK) // 200
@@ -104,40 +136,80 @@ public class ContractController {
     }
 
     @PostMapping("/final")
-    public ToWeb finishFinal(String contractnum,String content){
-        if(contractService.checkState(contractnum)!=2){
-            return ToWeb.error("非法操作");
+    public ResponseEntity<ToWeb> finishFinal(@RequestBody CounterSignR c){
+        if(contractService.checkState(c.getCode())!=2){
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST) // 400
+                    .body(ToWeb.error("非法操作"));
         }
-        if(contractService.finishC(contractnum,content)){
-            contractProcessService.finalProcess(contractnum);
-            return ToWeb.success();
+        if(contractProcessService.finishProcess(c.getCode(), 2, ThreadLocalUtil.getTL(), null)){
+            contractService.changeContend(c.getCode(),c.getContent());
+            updateProcess.updateTable(c.getCode());
+            return ResponseEntity
+                    .status(HttpStatus.OK) // 200
+                    .body(ToWeb.success());
         }
-        return ToWeb.error("数据错误");
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
+                .body(ToWeb.error("数据错误"));
     }
 
     @PostMapping("/approve")
-    public ToWeb finishApprove(String contractnum, String result,String content){
-        if(contractService.checkState(contractnum)!=3){
-            return ToWeb.error("非法操作");
+    public ResponseEntity<ToWeb> finishApprove(@RequestBody ApproveR r) {
+        try {
+            // 验证合同状态（必须为定稿完成状态）
+            if (contractService.checkState(r.getCode()) != 3) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ToWeb.error("非法操作：只有定稿完成的合同才能审批"));
+            }
+
+            // 处理审批通过
+            if ("approve".equalsIgnoreCase(r.getApprovalResult())) {
+                if (!contractProcessService.finishProcess(r.getCode(), 3, ThreadLocalUtil.getTL(), r.getApprovalComment())) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(ToWeb.error("审批流程更新失败"));
+                }
+                updateProcess.updateTable(r.getCode());
+
+                return ResponseEntity.ok()
+                        .body(ToWeb.success("合同审批通过"));
+            }
+            // 处理审批拒绝
+            else {
+                contractProcessService.finishProcess(r.getCode(), 3, ThreadLocalUtil.getTL(), r.getApprovalComment());
+                contractService.changeType(r.getCode(), 1);
+                return ResponseEntity.ok()
+                        .body(ToWeb.success("合同已拒绝并回滚到初始状态"));
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ToWeb.error("审批过程中发生错误: " + e.getMessage()));
         }
-        if(Objects.equals(result, "true")){
-            contractProcessService.finishProcess(contractnum,3,ThreadLocalUtil.getTL(),content);
-            updateProcess.updateTable(contractnum);
-        }else{
-            contractService.changeType(contractnum,0);
-            contractProcessService.changeState(contractnum,0);
-        }
-        return ToWeb.success();
     }
 
     @PostMapping("/sign")
-    public ToWeb finishSign(String contractnum,String content){
-        if(contractService.checkState(contractnum)!=4){
-            return ToWeb.error("非法操作");
+    public ResponseEntity<ToWeb> finishSign(@RequestBody SignR r) {
+        try {
+            // 验证合同状态（必须为审批完成状态）
+            if (contractService.checkState(r.getCode()) != 4) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ToWeb.error("非法操作：只有审批完成的合同才能签订"));
+            }
+
+            // 记录签订流程
+            if (!contractProcessService.finishProcess(r.getCode(), 4, ThreadLocalUtil.getTL(), r.toString())) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ToWeb.error("签订流程记录失败"));
+            }
+            updateProcess.updateTable(r.getCode());
+            return ResponseEntity.ok()
+                    .body(ToWeb.success("合同签订成功"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ToWeb.error("签订过程中发生错误: " + e.getMessage()));
         }
-        contractProcessService.finishProcess(contractnum,4,ThreadLocalUtil.getTL(),content);
-        updateProcess.updateTable(contractnum);
-        return ToWeb.success();
     }
 
     @GetMapping("/detail")
@@ -237,7 +309,7 @@ public class ContractController {
                 default -> "";
             };
             contractProcessS.setStatus(status);
-            List<ContractProcess> contractProcesses = contractProcessService.findBytype(s,2);//起稿人
+            List<ContractProcess> contractProcesses = contractProcessService.findBytype(s,0);//起稿人
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setDrafter(c.getUserName());
                 contractProcessS.setDrafttime(c.getTime().toString());
@@ -258,14 +330,21 @@ public class ContractController {
                 contractProcessS.setApprover(contractProcessS.getApprover()==null?c.getUserName():contractProcessS.getApprover()+" "+c.getUserName());
                 contractProcessS.setApprovetime(c.getTime().toString());
             }
+            contractProcesses = contractProcessService.findBytype(s,2);//定稿人
+            for(ContractProcess c : contractProcesses){
+                contractProcessS.setFinalizer(c.getUserName());
+                contractProcessS.setFinalizetime(c.getTime().toString());
+            }
 
-            contractProcessS.setFinalizer(contractProcessS.getDrafter());//定稿人
-            contractProcessS.setFinalizetime(contractProcessS.getDrafttime());
-
-            contractProcesses = contractProcessService.findBytype(s,4);//审批人
+            contractProcesses = contractProcessService.findBytype(s,4);//签订
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setSigner(contractProcessS.getSigner()==null?c.getUserName():contractProcessS.getSigner()+" "+c.getUserName());
                 contractProcessS.setSigntime(c.getTime().toString());
+                SignR signR = fromString(c.getContend());
+                contractProcessS.setSignlocation(signR.getSignlocation());
+                contractProcessS.setOurrepresentative(signR.getOurrepresentative());
+                contractProcessS.setCustomerrepresentative(signR.getCustomerrepresentative());
+                contractProcessS.setSignremark(signR.getRemarks());
             }
             contractProcessSES.add(contractProcessS);
         }
@@ -273,4 +352,5 @@ public class ContractController {
                 .status(HttpStatus.OK) // 200
                 .body(ToWeb.success(contractProcessSES));
     }
+
 }

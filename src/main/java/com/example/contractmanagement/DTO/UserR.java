@@ -1,4 +1,4 @@
-package com.example.contractmanagement.webservice;
+package com.example.contractmanagement.DTO;
 import lombok.Data;
 
 @Data

@@ -15,42 +15,37 @@ public class UpdateProcess {
     ContractProcessMapper contractProcessMapper;
     @Autowired
     ContractMapper contractMapper;
-    private void check(String connum,int checknum,int targetnum,int nowtype,int totype){
+    private void check(String connum,int checknum,int nowtype,int totype){
         LambdaQueryWrapper<ContractProcess> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .eq(ContractProcess::getConnum,connum)
-                .eq(ContractProcess::getType, checknum)
-                .ne(ContractProcess::getState,2);
-        if(contractProcessMapper.selectOne(lambdaQueryWrapper)==null){
-            if(targetnum==0){
-                LambdaUpdateWrapper<Contract> lambdaUpdateWrapper1 = new LambdaUpdateWrapper<>();
-                lambdaUpdateWrapper1.eq(Contract::getNum,connum)
-                        .eq(Contract::getType,nowtype)
-                        .set(Contract::getType,totype);
-                contractMapper.update(lambdaUpdateWrapper1);
+                .eq(ContractProcess::getType, checknum);
+
+        if(contractProcessMapper.selectOne(lambdaQueryWrapper)!=null){
+            lambdaQueryWrapper
+                    .eq(ContractProcess::getConnum,connum)
+                    .eq(ContractProcess::getType, checknum)
+                    .ne(ContractProcess::getState,2);
+            if(contractProcessMapper.selectOne(lambdaQueryWrapper)!=null){
                 return;
             }
-            LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
-            lambdaUpdateWrapper.eq(ContractProcess::getConnum,connum)
-                    .eq(ContractProcess::getType, targetnum)
-                    .eq(ContractProcess::getState,0)
-                    .set(ContractProcess::getState,1);
-            int rows = contractProcessMapper.update(lambdaUpdateWrapper);
-            if(rows!=0){
-                LambdaUpdateWrapper<Contract> lambdaUpdateWrapper1 = new LambdaUpdateWrapper<>();
-                lambdaUpdateWrapper1.eq(Contract::getNum,connum)
+            System.out.println("type"+checknum+" finished");
+            LambdaUpdateWrapper<Contract> lambdaUpdateWrapper1 = new LambdaUpdateWrapper<>();
+            lambdaUpdateWrapper1.eq(Contract::getNum,connum)
                         .eq(Contract::getType,nowtype)
                         .set(Contract::getType,totype);
-                contractMapper.update(lambdaUpdateWrapper1);
-            }
+            contractMapper.update(lambdaUpdateWrapper1);
+
         }
     }
     public void updateTable(String connum) {
         //检查会签情况
-        check(connum,1,2,1,2);
+        check(connum,1,1,2);
+        //检查定稿情况
+        check(connum,2,2,3);
         //检测审批情况
-        check(connum,3,4,3,4);
+        check(connum,3,3,4);
         //检测签订情况
-        check(connum,4,0,4,5);
+        check(connum,4,4,5);
     }
 }
