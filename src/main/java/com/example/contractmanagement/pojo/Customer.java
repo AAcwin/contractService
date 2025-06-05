@@ -7,14 +7,9 @@ import lombok.Data;
 @Data
 @TableName("customer")
 public class Customer {
-
-    @TableId
-    private String num;
     private String name;
     private String address;
-    private String tel;
-    private String fax;
+    private String phone;
+    private String contact;
     private String code;
-    private String bank;
-    private String account;
 }
