@@ -6,4 +6,5 @@ import com.example.contractmanagement.pojo.Permission;
 public interface PermissionService {
     Permission getByrolename(String rolename);
     void changePermission(String rolename, PermissionDTO p);
+    void insertPermission(Permission permission);
 }

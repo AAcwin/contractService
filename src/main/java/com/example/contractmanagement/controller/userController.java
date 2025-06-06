@@ -1,5 +1,6 @@
 package com.example.contractmanagement.controller;
 import com.example.contractmanagement.Utils.JwtUtil;
+import com.example.contractmanagement.pojo.Permission;
 import com.example.contractmanagement.pojo.ToWeb;
 import com.example.contractmanagement.pojo.User;
 import com.example.contractmanagement.pojo.UserRight;
@@ -36,6 +37,15 @@ public class userController {
         }
 
         userService.register(request.getUsername(), request.getPassword(), request.getEmail());
+        Permission permission = new Permission();
+        permission.setApprove(false);
+        permission.setDraft(false);
+        permission.setQuery(false);
+        permission.setSign(false);
+        permission.setFinalize(false);
+        permission.setCountersign(false);
+        permission.setRolename(request.getUsername());
+        permissionService.insertPermission(permission);
         return ResponseEntity
                 .status(200)  // 201 Created
                 .body(ToWeb.success());

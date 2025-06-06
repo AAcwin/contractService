@@ -32,4 +32,9 @@ public class PermissionServiceImpl implements PermissionService {
         permissionMapper.update(lambdaUpdateWrapper);
 
     }
+
+    @Override
+    public void insertPermission(Permission permission) {
+        permissionMapper.insert(permission);
+    }
 }
