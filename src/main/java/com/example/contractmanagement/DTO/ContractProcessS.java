@@ -13,6 +13,8 @@ public class ContractProcessS {
     private String cosigncontent;
     private String approver;
     private String approvetime;
+    private String approvalResult;
+    private String approvalComment;
     private String finalizer;
     private String finalizetime;
     private String signer;

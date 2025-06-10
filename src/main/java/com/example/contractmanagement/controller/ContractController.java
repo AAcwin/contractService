@@ -13,9 +13,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.ErrorManager;
 
 import static com.example.contractmanagement.Utils.fromString.fromString;
 
@@ -34,11 +41,39 @@ public class ContractController {
             @RequestParam String customername,
             @RequestParam String content,
             @RequestParam String starttime,
-            @RequestParam String endtime) {
+            @RequestParam String endtime,
+            @RequestParam(required = false) MultipartFile file)  {
 
         String uid = contractService.insertIntoTable(contractname, customername, content, starttime, endtime);
 
         if (!uid.isEmpty()) {
+            if (file != null && !file.isEmpty()) {
+                try {
+                    // 获取当前运行目录
+                    String currentDir = System.getProperty("user.dir");
+
+                    // 创建receivefiles目录（如果不存在）
+                    Path uploadDir = Paths.get(currentDir, "receivefiles");
+                    if (!Files.exists(uploadDir)) {
+                        Files.createDirectories(uploadDir);
+                    }
+
+                    // 生成安全的文件名
+                    String filename = StringUtils.cleanPath(uid+"-"+StringUtils.cleanPath(file.getOriginalFilename()));
+
+                    // 构建完整文件路径
+                    Path filePath = uploadDir.resolve(filename);
+                    // 保存文件
+                    file.transferTo(filePath.toFile());
+                    contractService.insertUrl(uid,filename);
+                } catch (IOException e) {
+                    return ResponseEntity
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
+                            .body(ToWeb.error("数据错误"));
+                }
+            }
+                    // 可以在这里记录文件信息到数据库（如果需要）
+                    // contractService.saveFileInfo(uid, filename, filePath.toString());
             contractProcessService.insertIntoTable(uid, 0, ThreadLocalUtil.getTL());
             Map<String, String> uuid = new TreeMap<>();
             uuid.put("contractnum", uid);
@@ -123,7 +158,7 @@ public class ContractController {
         }
 
         // 处理会签流程
-        if (contractProcessService.finishProcess(c.getCode(), 1, ThreadLocalUtil.getTL(), c.getContent())) {
+        if (contractProcessService.finishProcess(c.getCode(), 1, ThreadLocalUtil.getTL(), c.getCosigncontent())) {
             updateProcess.updateTable(c.getCode());
             return ResponseEntity
                     .status(HttpStatus.OK) // 200
@@ -136,15 +171,47 @@ public class ContractController {
     }
 
     @PostMapping("/final")
-    public ResponseEntity<ToWeb> finishFinal(@RequestBody CounterSignR c){
-        if(contractService.checkState(c.getCode())!=2){
+    public ResponseEntity<ToWeb> finishFinal(@RequestParam String code,
+                                             @RequestParam String content,
+                                             @RequestParam(required = false) MultipartFile file){
+        if(contractService.checkState(code)!=2 || contractService.checkState(code)!=6){
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST) // 400
                     .body(ToWeb.error("非法操作"));
         }
-        if(contractProcessService.finishProcess(c.getCode(), 2, ThreadLocalUtil.getTL(), null)){
-            contractService.changeContend(c.getCode(),c.getContent());
-            updateProcess.updateTable(c.getCode());
+        if(file != null && !file.isEmpty()) {
+            try {
+                // 获取当前运行目录下的receivefiles目录
+                String currentDir = System.getProperty("user.dir");
+                Path uploadDir = Paths.get(currentDir, "receivefiles");
+
+                // 创建目录（如果不存在）
+                if (!Files.exists(uploadDir)) {
+                    Files.createDirectories(uploadDir);
+                }
+
+                // 生成安全的文件名
+                String filename = StringUtils.cleanPath(code+"-"+StringUtils.cleanPath(file.getOriginalFilename()));
+
+                // 保存文件
+                Path filePath = uploadDir.resolve(filename);
+                file.transferTo(filePath.toFile());
+                contractService.insertUrl(code,filename);
+
+                // 可以在这里保存文件路径到数据库
+                // contractService.saveFilePath(code, filePath.toString());
+
+            } catch (IOException e) {
+                return ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
+                        .body(ToWeb.error("数据错误"));
+                // 可以根据需求决定是否继续处理
+            }
+        }
+        if(contractProcessService.finishProcess(code, 2, ThreadLocalUtil.getTL(), null)){
+            contractService.changeContend(code,content);
+            contractService.changeType(code,3);
+            updateProcess.updateTable(code);
             return ResponseEntity
                     .status(HttpStatus.OK) // 200
                     .body(ToWeb.success());
@@ -176,10 +243,9 @@ public class ContractController {
             }
             // 处理审批拒绝
             else {
-                contractProcessService.finishProcess(r.getCode(), 3, ThreadLocalUtil.getTL(), r.getApprovalComment());
-                contractService.changeType(r.getCode(), 1);
+                contractService.changeType(r.getCode(), 6);
                 return ResponseEntity.ok()
-                        .body(ToWeb.success("合同已拒绝并回滚到初始状态"));
+                        .body(ToWeb.success("合同已拒绝"));
             }
 
         } catch (Exception e) {
@@ -234,14 +300,18 @@ public class ContractController {
             cs.setBeginDate(c.getBeginTime().toString());
             cs.setEndDate(c.getEndTime().toString());
             String status = switch (c.getType()) {
-                case 1 -> "起草";
-                case 2 -> "会签完成";
-                case 3 -> "定稿完成";
-                case 4 -> "审批完成";
+                case 1 -> "待会签";
+                case 2, 6 -> "待定稿";
+                case 3 -> "待审核";
+                case 4 -> "待签订";
                 case 5 -> "签订完成";
                 default -> "";
             };
             cs.setStatus(status);
+            if(c.getUrl()!=null){
+                cs.setFileUrl("http://120.46.66.184:4540/download/"+c.getUrl());
+            }
+
             contracts.add(cs);
         }
 
@@ -302,7 +372,7 @@ public class ContractController {
             contractProcessS.setCode(s);
             String status = switch (contractService.checkState(s)) {
                 case 1 -> "待会签";
-                case 2 -> "待定稿";
+                case 2, 6 -> "待定稿";
                 case 3 -> "待审核";
                 case 4 -> "待签订";
                 case 5 -> "签订完成";
@@ -318,16 +388,12 @@ public class ContractController {
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setCosigner(contractProcessS.getCosigner()==null?c.getUserName():contractProcessS.getCosigner()+" "+c.getUserName());
                 contractProcessS.setCosigntime(c.getTime().toString());
-                String contend = "";
-                if(contractProcessS.getCosigncontent()!=null){
-                    contend = contractProcessS.getCosigncontent();
-                }
-                contend += " "+c.getContend();
-                contractProcessS.setCosigncontent(contend);
+                contractProcessS.setCosigncontent(c.getContend());
             }
             contractProcesses = contractProcessService.findBytype(s,3);//审批人
             for(ContractProcess c : contractProcesses){
-                contractProcessS.setApprover(contractProcessS.getApprover()==null?c.getUserName():contractProcessS.getApprover()+" "+c.getUserName());
+                contractProcessS.setApprovalComment(c.getContend());
+                contractProcessS.setApprover(c.getUserName());
                 contractProcessS.setApprovetime(c.getTime().toString());
             }
             contractProcesses = contractProcessService.findBytype(s,2);//定稿人
@@ -338,7 +404,7 @@ public class ContractController {
 
             contractProcesses = contractProcessService.findBytype(s,4);//签订
             for(ContractProcess c : contractProcesses){
-                contractProcessS.setSigner(contractProcessS.getSigner()==null?c.getUserName():contractProcessS.getSigner()+" "+c.getUserName());
+                contractProcessS.setSigner(c.getUserName());
                 contractProcessS.setSigntime(c.getTime().toString());
                 SignR signR = fromString(c.getContend());
                 contractProcessS.setSignlocation(signR.getSignlocation());

@@ -17,4 +17,5 @@ public class Contract {
     private String userName;
     private int type;
     private LocalDateTime finishTime;
+    private String url;
 }

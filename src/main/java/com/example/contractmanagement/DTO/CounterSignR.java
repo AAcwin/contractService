@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class CounterSignR {
     private String code;
-    private String content;
+    private String cosigncontent;
 }

@@ -2,6 +2,8 @@ package com.example.contractmanagement.DTO;
 
 import lombok.Data;
 
+import java.io.File;
+
 @Data
 public class ContractS {
     int id;
@@ -13,4 +15,5 @@ public class ContractS {
     String status;
     String content;
     int amount;
+    String fileUrl;
 }

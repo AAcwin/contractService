@@ -106,4 +106,12 @@ public class ContractServiceImpl implements ContractService {
                 .eq(Contract::getUserName,ThreadLocalUtil.getTL());
         return contractMapper.selectList(lambdaQueryWrapper);
     }
+
+    @Override
+    public void insertUrl(String uid,String url){
+        LambdaUpdateWrapper<Contract> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Contract::getNum,uid)
+                .set(Contract::getUrl,url);
+        contractMapper.update(lambdaUpdateWrapper);
+    }
 }
