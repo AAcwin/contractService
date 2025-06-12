@@ -25,10 +25,10 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         ContractProcess contractProcess = new ContractProcess();
         contractProcess.setConnum(num);
         contractProcess.setUserName(user);
-        contractProcess.setTime(LocalDateTime.now());
         contractProcess.setType(type);
         if(contractProcess.getType()==0){
             contractProcess.setState(2);
+            contractProcess.setTime(LocalDateTime.now());
         }
         else{
             contractProcess.setState(1);
@@ -40,7 +40,6 @@ public class ContractProcessServiceImpl implements ContractProcessService {
             return false;
         }
     }
-
 
 
     @Override
@@ -58,7 +57,8 @@ public class ContractProcessServiceImpl implements ContractProcessService {
                 .eq(ContractProcess::getType,type)
                 .eq(ContractProcess::getUserName,user)
                 .set(ContractProcess::getContend,contend)
-                .set(ContractProcess::getState,2);
+                .set(ContractProcess::getState,2)
+                .set(ContractProcess::getTime,LocalDateTime.now());
         try {
             contractProcessMapper.update(lambdaUpdateWrapper);
             return true;

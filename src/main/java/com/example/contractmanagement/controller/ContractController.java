@@ -174,7 +174,7 @@ public class ContractController {
     public ResponseEntity<ToWeb> finishFinal(@RequestParam String code,
                                              @RequestParam String content,
                                              @RequestParam(required = false) MultipartFile file){
-        if(contractService.checkState(code)!=2 || contractService.checkState(code)!=6){
+        if(contractService.checkState(code)!=2 && contractService.checkState(code)!=6){
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST) // 400
                     .body(ToWeb.error("非法操作"));
@@ -278,8 +278,8 @@ public class ContractController {
         }
     }
 
-    @GetMapping("/detail")
-    public ResponseEntity<ToWeb> allContracts() {
+    @PostMapping("/detail")
+    public ResponseEntity<ToWeb> allContracts(@RequestBody DetailR r) {
         List<Contract> contracts1 = contractService.showConstracts();
         List<ContractS> contracts = new ArrayList<>();
 
@@ -307,6 +307,11 @@ public class ContractController {
                 case 5 -> "签订完成";
                 default -> "";
             };
+            if(!Objects.equals(r.getStatus(), "all")){
+                if(!status.equals(r.getStatus())){
+                    continue;
+                }
+            }
             cs.setStatus(status);
             if(c.getUrl()!=null){
                 cs.setFileUrl("http://120.46.66.184:4540/download/"+c.getUrl());
@@ -363,8 +368,8 @@ public class ContractController {
         return ToWeb.success(dto);
     }
 
-    @GetMapping("/process")
-    public ResponseEntity<ToWeb> getAllProcess(){
+    @PostMapping("/process")
+    public ResponseEntity<ToWeb> getAllProcess(@RequestBody DetailR r){
         List<ContractProcessS> contractProcessSES = new ArrayList<>();
         Set<String> cons = contractProcessService.getAllNum();
         for(String s : cons){
@@ -378,34 +383,59 @@ public class ContractController {
                 case 5 -> "签订完成";
                 default -> "";
             };
+            if(!Objects.equals(r.getStatus(), "all")){
+                if(!status.equals(r.getStatus())){
+                    continue;
+                }
+            }
             contractProcessS.setStatus(status);
             List<ContractProcess> contractProcesses = contractProcessService.findBytype(s,0);//起稿人
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setDrafter(c.getUserName());
-                contractProcessS.setDrafttime(c.getTime().toString());
+                if(!Objects.isNull(c.getTime())){
+                    contractProcessS.setDrafttime(c.getTime().toString());
+                }else{
+                    contractProcessS.setDrafttime("");
+                }
             }
             contractProcesses = contractProcessService.findBytype(s,1);//会签人
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setCosigner(contractProcessS.getCosigner()==null?c.getUserName():contractProcessS.getCosigner()+" "+c.getUserName());
-                contractProcessS.setCosigntime(c.getTime().toString());
+                if(!Objects.isNull(c.getTime())){
+                    contractProcessS.setCosigntime(c.getTime().toString());
+                }else{
+                    contractProcessS.setCosigntime("");
+                }
                 contractProcessS.setCosigncontent(c.getContend());
             }
             contractProcesses = contractProcessService.findBytype(s,3);//审批人
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setApprovalComment(c.getContend());
                 contractProcessS.setApprover(c.getUserName());
-                contractProcessS.setApprovetime(c.getTime().toString());
+                if(!Objects.isNull(c.getTime())){
+                    contractProcessS.setApprovetime(c.getTime().toString());
+                }else{
+                    contractProcessS.setApprovetime("");
+                }
             }
             contractProcesses = contractProcessService.findBytype(s,2);//定稿人
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setFinalizer(c.getUserName());
-                contractProcessS.setFinalizetime(c.getTime().toString());
+                if(!Objects.isNull(c.getTime())){
+                    contractProcessS.setFinalizetime(c.getTime().toString());
+                }else{
+                    contractProcessS.setFinalizetime("");
+                }
             }
 
             contractProcesses = contractProcessService.findBytype(s,4);//签订
             for(ContractProcess c : contractProcesses){
                 contractProcessS.setSigner(c.getUserName());
-                contractProcessS.setSigntime(c.getTime().toString());
+                if(!Objects.isNull(c.getTime())){
+                    contractProcessS.setSigntime(c.getTime().toString());
+                }else{
+                    contractProcessS.setSigntime("");
+                }
                 SignR signR = fromString(c.getContend());
                 contractProcessS.setSignlocation(signR.getSignlocation());
                 contractProcessS.setOurrepresentative(signR.getOurrepresentative());
