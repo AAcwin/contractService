@@ -16,4 +16,5 @@ public interface ContractProcessService {
 
     Set<String> getAllNum();
 
+    void deleteContract(String code);
 }

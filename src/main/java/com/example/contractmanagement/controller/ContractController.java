@@ -449,4 +449,14 @@ public class ContractController {
                 .body(ToWeb.success(contractProcessSES));
     }
 
+    @PostMapping("/delete")
+    public ResponseEntity<ToWeb> deleteData(@RequestBody DeleteR r){
+        contractProcessService.deleteContract(r.getCode());
+        contractService.deleteContract(r.getCode());
+        return ResponseEntity
+                .status(HttpStatus.OK) // 200
+                .body(ToWeb.success());
+    }
+
+
 }

@@ -118,6 +118,12 @@ public class ContractProcessServiceImpl implements ContractProcessService {
         return nums;
     }
 
+    @Override
+    public void deleteContract(String code) {
+        LambdaUpdateWrapper<ContractProcess> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(ContractProcess::getConnum,code);
+        contractProcessMapper.delete(lambdaUpdateWrapper);
+    }
 
 
 }

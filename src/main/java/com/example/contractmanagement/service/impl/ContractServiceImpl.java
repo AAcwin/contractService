@@ -114,4 +114,11 @@ public class ContractServiceImpl implements ContractService {
                 .set(Contract::getUrl,url);
         contractMapper.update(lambdaUpdateWrapper);
     }
+
+    @Override
+    public void deleteContract(String code){
+        LambdaUpdateWrapper<Contract> lambdaQueryWrapper = new LambdaUpdateWrapper<>();
+        lambdaQueryWrapper.eq(Contract::getNum,code);
+        contractMapper.delete(lambdaQueryWrapper);
+    }
 }

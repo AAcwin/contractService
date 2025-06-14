@@ -18,4 +18,6 @@ public interface ContractService {
     List<Contract> findByUser();
     List<Contract> findByMyType(int type);
     void insertUrl(String uid,String url);
+
+    void deleteContract(String code);
 }
